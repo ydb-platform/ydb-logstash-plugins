@@ -8,16 +8,13 @@ apply from: LOGSTASH_CORE_PATH + "/../rubyUtils.gradle"
 // plugin info
 // ===========================================================================
 group                      'org.logstashplugins' // must match the package of the main plugin class
-version                    "${file("VERSION").text.trim()}" // read from required VERSION file
+version                    = "1.0.2"
 description                = "Example Java output implementation"
 pluginInfo.licenses        = ['Apache-2.0'] // list of SPDX license IDs
 pluginInfo.longDescription = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using \$LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
 pluginInfo.authors         = ['Elasticsearch']
 pluginInfo.email           = ['info@elastic.co']
 pluginInfo.homepage        = "http://www.elastic.co/guide/en/logstash/current/index.html"
-pluginInfo.pluginType      = "output"
-pluginInfo.pluginClass     = "JavaOutputExample"
-pluginInfo.pluginName      = "java_output_example" // must match the @LogstashPlugin annotation in the main plugin class
 // ===========================================================================
 
 sourceCompatibility = 1.9
@@ -105,9 +102,34 @@ tasks.register("removeObsoleteJars") {
     }
 }
 
-tasks.register("gem"){
+def pluginType = project.findProperty('pluginType') ?: 'input'
+def pluginClass = project.findProperty('pluginClass') ?: 'YdbTopicsInput'
+def pluginName = project.findProperty('pluginName') ?: 'ydb_topics_input'
+
+if (pluginType == 'output') {
+    pluginClass = 'YdbTopicsOutput'
+    pluginName = 'ydb_topics_output'
+}
+
+pluginInfo.pluginType = pluginType
+pluginInfo.pluginClass = pluginClass
+pluginInfo.pluginName = pluginName
+
+tasks.register("gemInput") {
     dependsOn = [downloadAndInstallJRuby, removeObsoleteJars, vendor, generateRubySupportFiles]
     doLast {
         buildGem(projectDir, buildDir, pluginInfo.pluginFullName() + ".gemspec")
     }
 }
+//команда для запуска
+//gradlew gemInput -PpluginType=input -PpluginClass=YdbTopicsInput -PpluginName=ydb_topics_input
+
+tasks.register("gemOutput") {
+    dependsOn = [downloadAndInstallJRuby, removeObsoleteJars, vendor, generateRubySupportFiles]
+    doLast {
+        buildGem(projectDir, buildDir, pluginInfo.pluginFullName() + ".gemspec")
+    }
+}
+
+//команда для запуска
+// gradlew gemOutput -PpluginType=output -PpluginClass=YdbTopicsOutput -PpluginName=ydb_topics_output
