@@ -1,10 +1,8 @@
-package org.logstashplugins.input;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.logstashplugins.input.util.CustomMessage;
+import util.CustomMessage;
 
-import org.logstashplugins.input.util.MessageHandler;
+import org.logstashplugins.util.MessageHandler;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;

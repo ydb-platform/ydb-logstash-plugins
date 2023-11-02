@@ -1,11 +1,12 @@
-package org.logstashplugins.input;
+package org.logstashplugins;
 
 import co.elastic.logstash.api.Configuration;
 import co.elastic.logstash.api.Context;
 import co.elastic.logstash.api.Input;
 import co.elastic.logstash.api.LogstashPlugin;
 import co.elastic.logstash.api.PluginConfigSpec;
-import org.logstashplugins.input.util.MessageHandler;
+
+import org.logstashplugins.util.MessageHandler;
 import tech.ydb.auth.AuthProvider;
 import tech.ydb.auth.NopAuthProvider;
 import tech.ydb.auth.TokenAuthProvider;
@@ -84,7 +85,7 @@ public class YdbTopicsInput implements Input {
                 .build();
 
         reader = topicClient.createAsyncReader(settings, handlerSettings);
-        reader.init().join();
+        reader.init();
     }
 
     private void initialize() {

@@ -1,4 +1,4 @@
-package org.logstashplugins.input.util;
+package org.logstashplugins.util;
 
 import tech.ydb.topic.read.Message;
 

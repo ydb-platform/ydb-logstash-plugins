@@ -1,10 +1,9 @@
-package org.logstashplugins.input;
-
 import co.elastic.logstash.api.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.logstash.plugins.ConfigurationImpl;
+import org.logstashplugins.YdbTopicsInput;
 import org.mockito.MockitoAnnotations;
 
 import java.util.*;

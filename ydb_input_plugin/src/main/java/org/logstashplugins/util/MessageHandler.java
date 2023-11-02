@@ -1,4 +1,4 @@
-package org.logstashplugins.input.util;
+package org.logstashplugins.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
