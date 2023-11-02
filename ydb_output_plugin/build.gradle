@@ -1,0 +1,7 @@
+apply from: project.rootDir.path + '/build.gradle'
+apply plugin: 'java'
+
+pluginInfo.pluginType      = "input"
+pluginInfo.pluginClass     = "YdbTopicsInput"
+pluginInfo.pluginName      = "ydb_topics_input"
+

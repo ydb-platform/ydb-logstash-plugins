@@ -1,4 +1,4 @@
-package org.logstashplugins.output;
+package org.logstashplugins;
 
 import co.elastic.logstash.api.Configuration;
 import co.elastic.logstash.api.Context;
@@ -6,8 +6,9 @@ import co.elastic.logstash.api.Event;
 import co.elastic.logstash.api.LogstashPlugin;
 import co.elastic.logstash.api.Output;
 import co.elastic.logstash.api.PluginConfigSpec;
-import org.logstashplugins.output.util.MessageProcessor;
-import org.logstashplugins.output.util.MessageProcessorCreator;
+
+import org.logstashplugins.util.MessageProcessor;
+import org.logstashplugins.util.MessageProcessorCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.ydb.auth.AuthProvider;
@@ -88,7 +89,7 @@ public class YdbTopicsOutput implements Output {
                 .setMessageGroupId(producerId)
                 .build();
         asyncWriter = topicClient.createAsyncWriter(settings);
-        asyncWriter.init().join();
+        asyncWriter.init();
     }
 
     private void sendMessage(byte[] message) {

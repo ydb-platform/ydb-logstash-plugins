@@ -1,4 +1,4 @@
-package org.logstashplugins.output.util;
+package org.logstashplugins.util;
 
 import java.util.Map;
 

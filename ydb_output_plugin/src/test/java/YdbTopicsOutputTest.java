@@ -1,9 +1,9 @@
-package org.logstashplugins.output;
-
 import co.elastic.logstash.api.*;
 import org.junit.Test;
 import org.logstash.plugins.ConfigurationImpl;
-import org.logstashplugins.output.util.CustomEvent;
+import org.logstashplugins.YdbTopicsOutput;
+import util.CustomEvent;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
