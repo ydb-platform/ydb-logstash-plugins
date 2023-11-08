@@ -4,14 +4,14 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING
 apply plugin: 'java'
 apply from: LOGSTASH_CORE_PATH + "/../rubyUtils.gradle"
 
-group                      'org.logstashplugins'
-version                    = "1.0.2"
-description                = "Example Java output implementation"
-pluginInfo.licenses        = ['Apache-2.0']
+group 'org.logstashplugins'
+version = "1.0.2"
+description = "Example Java output implementation"
+pluginInfo.licenses = ['Apache-2.0']
 pluginInfo.longDescription = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using \$LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
-pluginInfo.authors         = ['Elasticsearch']
-pluginInfo.email           = ['info@elastic.co']
-pluginInfo.homepage        = "http://www.elastic.co/guide/en/logstash/current/index.html"
+pluginInfo.authors = ['Elasticsearch']
+pluginInfo.email = ['info@elastic.co']
+pluginInfo.homepage = "http://www.elastic.co/guide/en/logstash/current/index.html"
 
 sourceCompatibility = 1.9
 targetCompatibility = 1.9
@@ -113,10 +113,10 @@ if (currentDir.endsWith('\\ydb_input_plugin')) {
         commandLine 'ruby', '-S', 'gem', 'build', "${projectDir}/ydb_output_plugin/${pluginInfo.pluginFullName()}.gemspec"
     }
 } else {
-        // Если запуск из корневой директории, выполнить обе задачи
-        tasks.register('gem', GradleBuild) {
-            dependsOn ':ydb_input_plugin:gemInput', ':ydb_output_plugin:gemOutput'
-        }
+    // Если запуск из корневой директории, выполнить обе задачи
+    tasks.register('gem', GradleBuild) {
+        dependsOn ':ydb_input_plugin:gemInput', ':ydb_output_plugin:gemOutput'
+    }
 }
 
 
