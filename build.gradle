@@ -4,18 +4,14 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING
 apply plugin: 'java'
 apply from: LOGSTASH_CORE_PATH + "/../rubyUtils.gradle"
 
-// ===========================================================================
-// plugin info
-// ===========================================================================
-group                      'org.logstashplugins' // must match the package of the main plugin class
+group                      'org.logstashplugins'
 version                    = "1.0.2"
 description                = "Example Java output implementation"
-pluginInfo.licenses        = ['Apache-2.0'] // list of SPDX license IDs
+pluginInfo.licenses        = ['Apache-2.0']
 pluginInfo.longDescription = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using \$LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
 pluginInfo.authors         = ['Elasticsearch']
 pluginInfo.email           = ['info@elastic.co']
 pluginInfo.homepage        = "http://www.elastic.co/guide/en/logstash/current/index.html"
-// ===========================================================================
 
 sourceCompatibility = 1.9
 targetCompatibility = 1.9
@@ -42,7 +38,6 @@ shadowJar {
 }
 
 dependencies {
-
     implementation 'tech.ydb:ydb-sdk-topic:2.1.7'
     implementation 'tech.ydb.auth:yc-auth-provider:2.1.0'
 
@@ -61,9 +56,12 @@ dependencies {
 
 clean {
     delete "${projectDir}/Gemfile"
-    delete "${projectDir}/" + pluginInfo.pluginFullName() + ".gemspec"
+    delete "${projectDir}/logstash-input-ydb_topics_input.gemspec"
+    delete "${projectDir}/logstash-output-ydb_topics_output.gemspec"
     delete "${projectDir}/lib/"
     delete "${projectDir}/vendor/"
+    delete "${projectDir}/.idea/"
+    delete "${projectDir}/.build/"
     new FileNameFinder().getFileNames(projectDir.toString(), pluginInfo.pluginFullName() + "-?.?.?.gem").each { filename ->
         delete filename
     }
@@ -73,7 +71,7 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-tasks.register("vendor"){
+tasks.register("vendor") {
     dependsOn shadowJar
     doLast {
         String vendorPathPrefix = "vendor/jar-dependencies"
@@ -102,34 +100,23 @@ tasks.register("removeObsoleteJars") {
     }
 }
 
-def pluginType = project.findProperty('pluginType') ?: 'input'
-def pluginClass = project.findProperty('pluginClass') ?: 'YdbTopicsInput'
-def pluginName = project.findProperty('pluginName') ?: 'ydb_topics_input'
+def currentDir = System.getProperty('user.dir')
 
-if (pluginType == 'output') {
-    pluginClass = 'YdbTopicsOutput'
-    pluginName = 'ydb_topics_output'
-}
-
-pluginInfo.pluginType = pluginType
-pluginInfo.pluginClass = pluginClass
-pluginInfo.pluginName = pluginName
-
-tasks.register("gemInput") {
-    dependsOn = [downloadAndInstallJRuby, removeObsoleteJars, vendor, generateRubySupportFiles]
-    doLast {
-        buildGem(projectDir, buildDir, pluginInfo.pluginFullName() + ".gemspec")
+if (currentDir.endsWith('\\ydb_input_plugin')) {
+    tasks.register('gem', Exec) {
+        dependsOn ':ydb_input_plugin:gemInput'
+        commandLine 'ruby', '-S', 'gem', 'build', "${projectDir}/ydb_input_plugin/${pluginInfo.pluginFullName()}.gemspec"
     }
-}
-//команда для запуска
-//gradlew gemInput -PpluginType=input -PpluginClass=YdbTopicsInput -PpluginName=ydb_topics_input
-
-tasks.register("gemOutput") {
-    dependsOn = [downloadAndInstallJRuby, removeObsoleteJars, vendor, generateRubySupportFiles]
-    doLast {
-        buildGem(projectDir, buildDir, pluginInfo.pluginFullName() + ".gemspec")
+} else if (currentDir.endsWith('\\ydb_output_plugin')) {
+    tasks.register('gem', Exec) {
+        dependsOn ':ydb_output_plugin:gemOutput'
+        commandLine 'ruby', '-S', 'gem', 'build', "${projectDir}/ydb_output_plugin/${pluginInfo.pluginFullName()}.gemspec"
     }
+} else {
+        // Если запуск из корневой директории, выполнить обе задачи
+        tasks.register('gem', GradleBuild) {
+            dependsOn ':ydb_input_plugin:gemInput', ':ydb_output_plugin:gemOutput'
+        }
 }
 
-//команда для запуска
-// gradlew gemOutput -PpluginType=output -PpluginClass=YdbTopicsOutput -PpluginName=ydb_topics_output
+
