@@ -1,9 +1,9 @@
 apply from: project.rootDir.path + '/build.gradle'
 apply plugin: 'java'
 
-pluginInfo.pluginType      = "output"
-pluginInfo.pluginClass     = "YdbTopicsOutput"
-pluginInfo.pluginName      = "ydb_topics_output"
+pluginInfo.pluginType = "output"
+pluginInfo.pluginClass = "YdbTopicsOutput"
+pluginInfo.pluginName = "ydb_topics_output"
 
 tasks.register('gemOutput', Exec) {
     dependsOn = [downloadAndInstallJRuby, removeObsoleteJars, vendor, generateRubySupportFiles]
