@@ -1,4 +1,4 @@
-package util;
+package org.logstashplugins.util;
 
 import tech.ydb.topic.read.Message;
 import tech.ydb.topic.read.PartitionSession;
