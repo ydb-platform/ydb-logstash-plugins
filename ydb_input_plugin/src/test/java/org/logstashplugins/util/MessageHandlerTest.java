@@ -1,8 +1,8 @@
-import org.junit.Before;
-import org.junit.Test;
-import util.CustomMessage;
+package org.logstashplugins.util;
 
-import org.logstashplugins.util.MessageHandler;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -19,7 +19,7 @@ public class MessageHandlerTest {
     @Mock
     private Consumer<Map<String, Object>> consumer;
 
-    @Before
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
     }
