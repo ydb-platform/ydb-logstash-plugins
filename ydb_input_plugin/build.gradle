@@ -1,11 +1,7 @@
-apply from: project.rootDir.path + '/build.gradle'
-apply plugin: 'java'
+description = "YDB Topics Input plugin"
 
-pluginInfo.pluginType = "input"
+pluginInfo.pluginType  = "input"
 pluginInfo.pluginClass = "YdbTopicsInput"
-pluginInfo.pluginName = "ydb_topics_input"
+pluginInfo.pluginName  = "ydb_topics_input"
 
-tasks.register('gemInput', Exec) {
-    dependsOn = [downloadAndInstallJRuby, removeObsoleteJars, vendor, generateRubySupportFiles]
-    commandLine 'ruby', '-S', 'gem', 'build', "${projectDir}/${pluginInfo.pluginFullName()}.gemspec"
-}
+
