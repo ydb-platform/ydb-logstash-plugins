@@ -1,0 +1,78 @@
+name: Publish Gems
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0.0
+
+      - name: Create Logstash directory
+        run: mkdir logstash
+
+      - name: Get latest Logstash versions
+        id: version
+        run: |
+          versions=($(curl -s https://api.github.com/repos/elastic/logstash/releases | jq -r '.[].tag_name'))
+          echo "::set-output name=versions::${versions[@]}"
+
+      - name: Create or Update GitHub Release
+        run: |
+          versions=($(echo "${{ steps.version.outputs.versions }}" | tr ' ' '\n'))
+
+          first_digit=$(echo "${versions[0]}" | grep -oE '[0-9]+' | head -c 1)
+          latest_version=$(printf "%s\n" "${versions[@]}" | grep "^v$first_digit\." | sort -rV | head -n 1)
+          previous_first_digit=$((first_digit - 1))
+          previous_version=$(printf "%s\n" "${versions[@]}" | grep "^v$previous_first_digit\." | sort -rV | head -n 1)
+
+          echo "Building for Logstash versions: $latest_version and $previous_version"
+
+          for current_version in "$latest_version" "$previous_version"; do
+              rm -rf "logstash/$current_version"
+              wget -P "logstash" "https://github.com/elastic/logstash/archive/$current_version.tar.gz"
+              tar -xzf "logstash/$current_version.tar.gz" --directory "logstash"
+              logstash_dir=$(tar -tzf "logstash/$current_version.tar.gz" | head -n 1 | cut -f1 -d"/")
+
+              echo "LOGSTASH_CORE_PATH=$(pwd)/logstash/$logstash_dir/logstash-core" > gradle.properties
+              echo "LOGSTASH_VERSION=$current_version" >> $GITHUB_ENV
+
+              cd logstash/$logstash_dir
+              ./gradlew clean
+              ./gradlew assemble
+
+              cd ../..
+
+              ./gradlew clean
+
+              ./gradlew gem
+
+              tag=$(git describe --tags --abbrev=0)
+
+              if gh release view "$tag" &> /dev/null; then
+                for plugin_file in $(find . -type f -name '*.gem' -not -path '*/vendor/*' -not -path '*/logstash/*'); do
+                  mv "$plugin_file" "$(dirname "$plugin_file")/${current_version}_$(basename -- "$plugin_file")"
+                done
+
+                gh release upload "$tag" */*.gem --clobber
+              else
+                for plugin_file in $(find . -type f -name '*.gem' -not -path '*/vendor/*' -not -path '*/logstash/*'); do
+                  mv "$plugin_file" "$(dirname "$plugin_file")/${current_version}_$(basename -- "$plugin_file")"
+                done
+
+                gh release create "$tag" -t "Release $tag" \
+                  -n "Built with Logstash Stable Versions" \
+                  */*.gem
+              fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

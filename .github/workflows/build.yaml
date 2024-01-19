@@ -1,0 +1,69 @@
+name: Build and Test Gems
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - release*
+  pull_request:
+    type: [opened, reopened, edited]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0.0
+
+      - name: Create Logstash directory
+        run: mkdir logstash
+
+      - name: Get latest Logstash versions
+        id: version
+        run: |
+          versions=($(curl -s https://api.github.com/repos/elastic/logstash/releases | jq -r '.[].tag_name'))
+          echo "::set-output name=versions::${versions[@]}"
+
+      - name: Test Build Gems on Latest Logstash Release Versions
+        run: |
+          versions=($(echo "${{ steps.version.outputs.versions }}" | tr ' ' '\n'))
+
+          # Находим первую цифру последней версии
+          first_digit=$(echo "${versions[0]}" | grep -oE '[0-9]+' | head -c 1)
+          # Находим последний релиз с этой цифрой
+          latest_version=$(printf "%s\n" "${versions[@]}" | grep "^v$first_digit\." | sort -rV | head -n 1)
+
+          # Находим первую цифру предшествующей версии
+          previous_first_digit=$((first_digit - 1))
+          # Находим последний релиз с предшествующей цифрой
+          previous_version=$(printf "%s\n" "${versions[@]}" | grep "^v$previous_first_digit\." | sort -rV | head -n 1)
+
+          echo "Building for Logstash versions: $latest_version and $previous_version"
+
+          for version in "$latest_version" "$previous_version"; do
+              rm -rf "logstash/$version"
+
+              wget -P "logstash" "https://github.com/elastic/logstash/archive/$version.tar.gz"
+              tar -xzf "logstash/$version.tar.gz" --directory "logstash"
+              logstash_dir=$(tar -tzf "logstash/$version.tar.gz" | head -n 1 | cut -f1 -d"/")
+
+              echo "LOGSTASH_CORE_PATH=$(pwd)/logstash/$logstash_dir/logstash-core" > gradle.properties
+              echo "LOGSTASH_VERSION=$version" >> $GITHUB_ENV
+
+              cd logstash/$logstash_dir
+              ./gradlew clean
+              ./gradlew assemble
+          
+              cd ../..
+
+              ./gradlew clean
+              ./gradlew gem
+          done
