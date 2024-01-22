@@ -2,3 +2,5 @@ rootProject.name = 'ydb-logstash-plugins'
 
 include ':ydb_input_plugin'
 include ':ydb_output_plugin'
+include ':ydb_storage_plugin'
+

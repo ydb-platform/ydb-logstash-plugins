@@ -1,0 +1,5 @@
+description = "YDB Topics Storage plugin"
+
+pluginInfo.pluginType  = "storage"
+pluginInfo.pluginClass = "YdbStoragePlugin"
+pluginInfo.pluginName  = "ydb_storage_plugin"
