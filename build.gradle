@@ -20,6 +20,8 @@ buildscript {
     dependencies {
         classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
     }
+
+    ext.snakeYamlVersion = '1.29'
 }
 
 subprojects {
