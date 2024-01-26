@@ -3,7 +3,7 @@ description = 'YDB LogStash plugins'
 allprojects {
     println "apply allprojects ${name} in ${projectDir}"
     group = 'org.logstashplugins'
-    version = '1.0.2'
+    version = '0.9.0'
 }
 
 buildscript {
@@ -41,8 +41,8 @@ subprojects {
     pluginInfo.homepage        = "http://www.elastic.co/guide/en/logstash/current/index.html"
     // ===========================================================================
 
-    sourceCompatibility = 1.9
-    targetCompatibility = 1.9
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     repositories {
         mavenCentral()
@@ -53,16 +53,17 @@ subprojects {
     }
 
     dependencies {
-        implementation 'tech.ydb:ydb-sdk-topic:2.1.7'
-        implementation 'tech.ydb.auth:yc-auth-provider:2.1.0'
+        implementation 'tech.ydb:ydb-sdk-topic:2.1.10'
+        implementation 'tech.ydb:ydb-sdk-table:2.1.10'
+        implementation 'tech.ydb.auth:yc-auth-provider:2.1.1'
+        implementation 'tech.ydb.test:ydb-junit5-support:2.1.10'
+
+        implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
 
         implementation 'org.apache.commons:commons-lang3:3.7'
         compileOnly 'org.apache.logging.log4j:log4j-api:2.17.0'
         compileOnly 'org.apache.logging.log4j:log4j-core:2.17.0'
-        implementation 'tech.ydb.test:ydb-junit5-support:2.1.10'
-        implementation 'tech.ydb:ydb-sdk-table:2.1.10'
 
-        implementation 'org.apache.logging.log4j:log4j-api:2.17.0'
         implementation fileTree(dir: LOGSTASH_CORE_PATH, include: "**/logstash-core.jar")
 
         testImplementation 'org.junit.jupiter:junit-jupiter:5.6.0'
