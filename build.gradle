@@ -1,14 +1,11 @@
 description = 'YDB LogStash plugins'
 
 allprojects {
-    println "apply allprojects ${name} in ${projectDir}"
     group = 'org.logstashplugins'
     version = '0.9.0'
 }
 
 buildscript {
-    println "apply buildscript ${name} in ${projectDir}"
-
     repositories {
         mavenCentral()
         jcenter()
@@ -25,8 +22,6 @@ buildscript {
 }
 
 subprojects {
-    println "apply subproject ${name} in ${projectDir}"
-
     apply plugin: 'java'
     apply from: LOGSTASH_CORE_PATH + '/../rubyUtils.gradle'
     apply plugin: 'com.github.johnrengelman.shadow'
@@ -36,9 +31,9 @@ subprojects {
     // ===========================================================================
     pluginInfo.licenses        = ['Apache-2.0'] // list of SPDX license IDs
     pluginInfo.longDescription = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using \$LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
-    pluginInfo.authors         = ['Elasticsearch']
-    pluginInfo.email           = ['info@elastic.co']
-    pluginInfo.homepage        = "http://www.elastic.co/guide/en/logstash/current/index.html"
+    pluginInfo.authors         = ['Mike Lukashev', 'Sergey Provolovich', 'Alexandr Gorshenin']
+    pluginInfo.email           = ['alexadr268@ydb.tech']
+    pluginInfo.homepage        = "https://ydb.tech/docs/en/"
     // ===========================================================================
 
     sourceCompatibility = 1.8
@@ -78,12 +73,14 @@ subprojects {
         delete "${projectDir}/Gemfile"
         delete "${projectDir}/lib/"
         delete "${projectDir}/vendor/"
+        delete "${projectDir}/VERSION"
+
         fileTree(dir: projectDir, includes: ["*.gemspec"]).each { file ->
             file.delete()
         }
-        delete "${projectDir}/VERSION"
-        new FileNameFinder().getFileNames(projectDir.toString(), pluginInfo.pluginFullName() + "-?.?.?.gem").each { filename ->
-            delete filename
+
+        fileTree(dir: projectDir, includes: ["*.gem"]).each { file ->
+            file.delete()
         }
     }
     //after clean if get problems: TASKKILL /F /IM java.exe
