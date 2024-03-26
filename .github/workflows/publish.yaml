@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -24,7 +24,7 @@ jobs:
         id: version
         run: |
           versions=($(curl -s https://api.github.com/repos/elastic/logstash/releases | jq -r '.[].tag_name'))
-          echo "::set-output name=versions::${versions[@]}"
+          echo "versions=${versions[@]}" >> $GITHUB_OUTPUT
 
       - name: Create or Update GitHub Release
         run: |

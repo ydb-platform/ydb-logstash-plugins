@@ -3,11 +3,11 @@ name: Build and Test Gems
 on:
   push:
     branches:
-      - master
+      - main
       - develop
       - release*
   pull_request:
-    type: [opened, reopened, edited]
+    type: [opened, reopened, edited, syncronized]
 
 jobs:
   build_and_test:
@@ -16,7 +16,7 @@ jobs:
     steps:
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -30,20 +30,20 @@ jobs:
         id: version
         run: |
           versions=($(curl -s https://api.github.com/repos/elastic/logstash/releases | jq -r '.[].tag_name'))
-          echo "::set-output name=versions::${versions[@]}"
+          echo "versions=${versions[@]}" >> $GITHUB_OUTPUT
 
       - name: Test Build Gems on Latest Logstash Release Versions
         run: |
           versions=($(echo "${{ steps.version.outputs.versions }}" | tr ' ' '\n'))
 
-          # Находим первую цифру последней версии
+          # Find current major digit
           first_digit=$(echo "${versions[0]}" | grep -oE '[0-9]+' | head -c 1)
-          # Находим последний релиз с этой цифрой
+          # Find the last release with current major digit
           latest_version=$(printf "%s\n" "${versions[@]}" | grep "^v$first_digit\." | sort -rV | head -n 1)
 
-          # Находим первую цифру предшествующей версии
+          # Find previous major digit
           previous_first_digit=$((first_digit - 1))
-          # Находим последний релиз с предшествующей цифрой
+          # Find the last release with previous major digit
           previous_version=$(printf "%s\n" "${versions[@]}" | grep "^v$previous_first_digit\." | sort -rV | head -n 1)
 
           echo "Building for Logstash versions: $latest_version and $previous_version"
@@ -61,7 +61,7 @@ jobs:
               cd logstash/$logstash_dir
               ./gradlew clean
               ./gradlew assemble
-          
+
               cd ../..
 
               ./gradlew clean
