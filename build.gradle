@@ -8,7 +8,6 @@ allprojects {
 buildscript {
     repositories {
         mavenCentral()
-        jcenter()
         maven {
             url "https://plugins.gradle.org/m2/"
         }
@@ -48,25 +47,12 @@ subprojects {
     }
 
     dependencies {
-        implementation 'tech.ydb:ydb-sdk-topic:2.1.10'
-        implementation 'tech.ydb:ydb-sdk-table:2.1.10'
-        implementation 'tech.ydb.auth:yc-auth-provider:2.1.1'
-        implementation 'tech.ydb.test:ydb-junit5-support:2.1.10'
-
-        implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
-
-        implementation 'org.apache.commons:commons-lang3:3.7'
-        compileOnly 'org.apache.logging.log4j:log4j-api:2.17.0'
-        compileOnly 'org.apache.logging.log4j:log4j-core:2.17.0'
-
         implementation fileTree(dir: LOGSTASH_CORE_PATH, include: "**/logstash-core.jar")
 
-        testImplementation 'org.junit.jupiter:junit-jupiter:5.6.0'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+        testImplementation group: 'org.jruby',                name: 'jruby-complete',   version: '9.2.11.0'
+        testRuntimeOnly    group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.21.1'
 
-        testImplementation 'org.jruby:jruby-complete:9.1.13.0'
-        testImplementation 'org.apache.logging.log4j:log4j-core:2.9.1'
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
     }
 
     clean {
@@ -83,7 +69,30 @@ subprojects {
             file.delete()
         }
     }
-    //after clean if get problems: TASKKILL /F /IM java.exe
+
+    test {
+        // Enable JUnit 5 (Gradle 4.6+).
+        useJUnitPlatform()
+
+        // Hide warning from JRuby 9.2
+        jvmArgs '--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED'
+
+        // Always run tests, even when nothing changed.
+        dependsOn 'cleanTest'
+
+        // Pass special tests parameters
+        if (project.hasProperty('YDB_ENDPOINT')) {
+            systemProperty 'YDB_ENDPOINT', project.getProperty('YDB_ENDPOINT')
+        }
+        if (project.hasProperty('YDB_DATABASE')) {
+            systemProperty 'YDB_DATABASE', project.getProperty('YDB_DATABASE')
+        }
+
+        // Show test results.
+        testLogging {
+            exceptionFormat org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
 
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'

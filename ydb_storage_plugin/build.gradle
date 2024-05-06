@@ -1,5 +1,12 @@
-description = "YDB Topics Storage plugin"
+description = "YDB Logstash Storage plugin"
 
 pluginInfo.pluginType  = "storage"
 pluginInfo.pluginClass = "YdbStoragePlugin"
 pluginInfo.pluginName  = "ydb_storage_plugin"
+
+dependencies {
+    implementation 'tech.ydb:ydb-sdk-table:2.1.10'
+    implementation 'tech.ydb.auth:yc-auth-provider:2.1.1'
+
+    testImplementation 'tech.ydb.test:ydb-junit5-support:2.1.10'
+}
