@@ -114,10 +114,12 @@ public class YdbStoragePlugin implements Output {
             Value<?>[] fields = new Value[fieldReaders.length];
             for (int idx = 0; idx < fieldReaders.length; idx++) {
                 fields[idx] = fieldReaders[idx].readField(ev);
+                if (fields[idx] == null) {
+                    return null;
+                }
             }
             return tableRowType.newValueUnsafe(fields);
-        }).collect(Collectors.toList());
-        System.out.println("GOT LIST " + ListType.of(tableRowType).newValue(eventToWrite));
+        }).filter(Objects::nonNull).collect(Collectors.toList());
         client.bulkUpsert(tablePath, ListType.of(tableRowType).newValue(eventToWrite));
     }
 

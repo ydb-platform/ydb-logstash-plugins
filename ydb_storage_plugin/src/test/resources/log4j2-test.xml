@@ -19,7 +19,7 @@
             <AppenderRef ref="Console"/>
         </Logger>
 
-        <Logger name="tech.ydb" level="trace" additivity="false">
+        <Logger name="tech.ydb" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
 

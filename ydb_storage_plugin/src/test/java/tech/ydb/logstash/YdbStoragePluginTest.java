@@ -130,4 +130,68 @@ public class YdbStoragePluginTest {
             executeSchemeQuery("DROP TABLE logstash_simple_test");
         }
    }
+
+    @Test
+    public void testNotNullTable() {
+        executeSchemeQuery(""
+                + "CREATE TABLE logstash_notnull_test("
+                + "  uuid Text NOT NULL,"
+                + "  ts Timestamp NOT NULL,"
+                + "  device Bytes NOT NULL,"
+                + "  value Float NOT NULL,"
+                + "  priority Uint8 NOT NULL,"
+                + "  PRIMARY KEY (uuid)"
+                + ");"
+        );
+
+        Map<String, Object> config = createConfigMap();
+        config.put(YdbStoragePlugin.TABLE_NAME.name(), "logstash_notnull_test");
+        config.put(YdbStoragePlugin.ID_COLUMN_NAME.name(), "uuid");
+        config.put(YdbStoragePlugin.TIMESTAMP_COLUMN_NAME.name(), "ts");
+
+        try {
+            YdbStoragePlugin plugin = new YdbStoragePlugin("test-notnull", new ConfigurationImpl(config), null);
+
+            Event ev1 = new org.logstash.Event();
+            ev1.setEventTimestamp(TS1);
+            ev1.setField("device", "dev1");
+            ev1.setField("value", 1.5d);
+            ev1.setField("priority", 1);
+
+            Event ev2 = new org.logstash.Event();
+            ev2.setEventTimestamp(TS2);
+            ev2.setField("device", "dev2");
+            ev2.setField("priority", -3);
+
+            Event ev3 = new org.logstash.Event();
+            ev3.setEventTimestamp(TS3);
+            ev3.setField("device", "dev3");
+            ev3.setField("value", -1f);
+            ev3.setField("priority", -2);
+
+            plugin.output(Arrays.asList(ev1, ev3, ev2));
+
+            ResultSetReader rs = executeQuery("SELECT * FROM logstash_notnull_test ORDER by ts");
+            Assertions.assertEquals(2, rs.getRowCount()); // ev2 skipped because doens't have value
+
+            Assertions.assertTrue(rs.next());
+
+            Assertions.assertNotNull(rs.getColumn("uuid").getText());
+            Assertions.assertEquals(TS1, rs.getColumn("ts").getTimestamp());
+            Assertions.assertArrayEquals("dev1".getBytes(), rs.getColumn("device").getBytes());
+            Assertions.assertEquals(1.5f, rs.getColumn("value").getFloat());
+            Assertions.assertEquals(1, rs.getColumn("priority").getUint8());
+
+            Assertions.assertTrue(rs.next());
+            Assertions.assertNotNull(rs.getColumn("uuid").getText());
+            Assertions.assertEquals(TS3, rs.getColumn("ts").getTimestamp());
+            Assertions.assertArrayEquals("dev3".getBytes(), rs.getColumn("device").getBytes());
+            Assertions.assertEquals(-1f, rs.getColumn("value").getFloat());
+            Assertions.assertEquals(0x100-2, rs.getColumn("priority").getUint8());
+
+            Assertions.assertFalse(rs.next());
+        } finally {
+            executeSchemeQuery("DROP TABLE logstash_notnull_test");
+        }
+   }
 }
