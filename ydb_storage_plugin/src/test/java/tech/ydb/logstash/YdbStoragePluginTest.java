@@ -1,8 +1,10 @@
 package tech.ydb.logstash;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
@@ -13,10 +15,10 @@ import org.logstash.plugins.ConfigurationImpl;
 
 import tech.ydb.table.SessionRetryContext;
 import tech.ydb.table.impl.SimpleTableClient;
-import tech.ydb.table.query.DataQueryResult;
-import tech.ydb.table.result.ResultSetReader;
+import tech.ydb.table.query.Params;
 import tech.ydb.table.rpc.grpc.GrpcTableRpc;
-import tech.ydb.table.transaction.TxControl;
+import tech.ydb.table.settings.ExecuteScanQuerySettings;
+import tech.ydb.table.values.Value;
 import tech.ydb.test.junit5.GrpcTransportExtension;
 import tech.ydb.test.junit5.YdbHelperExtension;
 
@@ -42,11 +44,23 @@ public class YdbStoragePluginTest {
         ).join().expectSuccess("cannot execute scheme query " + sql);
     }
 
-    private static ResultSetReader executeQuery(String selectQuery) {
-        DataQueryResult result = retryCtx.supplyResult(
-                session -> session.executeDataQuery(selectQuery, TxControl.snapshotRo())
-        ).join().getValue();
-        return result.getResultSet(0);
+    private static List<Map<String, Value<?>>> executeScanQuery(String sql) {
+        List<Map<String, Value<?>>> rows = new ArrayList<>();
+
+        retryCtx.supplyStatus(session -> {
+            rows.clear();
+            return session.executeScanQuery(sql, Params.empty(), ExecuteScanQuerySettings.newBuilder().build())
+                    .start(rsr -> {
+                        while (rsr.next()) {
+                            Map<String, Value<?>> row = new HashMap<>();
+                            for (int idx = 0; idx < rsr.getColumnCount(); idx++) {
+                                row.put(rsr.getColumnName(idx), rsr.getColumn(idx).getValue());
+                            }
+                            rows.add(row);
+                        }
+                    });
+        }).join().expectSuccess("cannot execute scan query " + sql);
+        return rows;
     }
 
     private static Map<String, Object> createConfigMap() {
@@ -100,36 +114,30 @@ public class YdbStoragePluginTest {
 
             plugin.output(Arrays.asList(ev1, ev3, ev2));
 
-            ResultSetReader rs = executeQuery("SELECT * FROM logstash_simple_test ORDER by ts");
-            Assertions.assertEquals(3, rs.getRowCount());
+            List<Map<String, Value<?>>> rows = executeScanQuery("SELECT * FROM logstash_simple_test ORDER by ts");
+            Assertions.assertEquals(3, rows.size());
 
-            Assertions.assertTrue(rs.next());
+            Assertions.assertTrue(rows.get(0).containsKey("id"));
+            Assertions.assertEquals(TS1, rows.get(0).get("ts").asOptional().get().asData().getTimestamp());
+            Assertions.assertEquals("dev1", rows.get(0).get("device").asOptional().get().asData().getText());
+            Assertions.assertEquals(1.5d, rows.get(0).get("value").asOptional().get().asData().getDouble());
+            Assertions.assertEquals(1, rows.get(0).get("priority").asOptional().get().asData().getUint16());
 
-            Assertions.assertNotNull(rs.getColumn("id").getText());
-            Assertions.assertEquals(TS1, rs.getColumn("ts").getTimestamp());
-            Assertions.assertEquals("dev1", rs.getColumn("device").getText());
-            Assertions.assertEquals(1.5d, rs.getColumn("value").getDouble());
-            Assertions.assertEquals(1, rs.getColumn("priority").getUint16());
+            Assertions.assertTrue(rows.get(1).containsKey("id"));
+            Assertions.assertEquals(TS2, rows.get(1).get("ts").asOptional().get().asData().getTimestamp());
+            Assertions.assertEquals("dev2", rows.get(1).get("device").asOptional().get().asData().getText());
+            Assertions.assertFalse(rows.get(1).get("value").asOptional().isPresent());
+            Assertions.assertEquals(0x10000-3, rows.get(1).get("priority").asOptional().get().asData().getUint16());
 
-            Assertions.assertTrue(rs.next());
-            Assertions.assertNotNull(rs.getColumn("id").getText());
-            Assertions.assertEquals(TS2, rs.getColumn("ts").getTimestamp());
-            Assertions.assertEquals("dev2", rs.getColumn("device").getText());
-            Assertions.assertFalse(rs.getColumn("value").isOptionalItemPresent());
-            Assertions.assertEquals(0x10000-3, rs.getColumn("priority").getUint16());
-
-            Assertions.assertTrue(rs.next());
-            Assertions.assertNotNull(rs.getColumn("id").getText());
-            Assertions.assertEquals(TS3, rs.getColumn("ts").getTimestamp());
-            Assertions.assertEquals("dev3", rs.getColumn("device").getText());
-            Assertions.assertEquals(-1d, rs.getColumn("value").getDouble());
-            Assertions.assertEquals(2, rs.getColumn("priority").getUint16());
-
-            Assertions.assertFalse(rs.next());
+            Assertions.assertTrue(rows.get(2).containsKey("id"));
+            Assertions.assertEquals(TS3, rows.get(2).get("ts").asOptional().get().asData().getTimestamp());
+            Assertions.assertEquals("dev3", rows.get(2).get("device").asOptional().get().asData().getText());
+            Assertions.assertEquals(-1d, rows.get(2).get("value").asOptional().get().asData().getDouble());
+            Assertions.assertEquals(2, rows.get(2).get("priority").asOptional().get().asData().getUint16());
         } finally {
             executeSchemeQuery("DROP TABLE logstash_simple_test");
         }
-   }
+    }
 
     @Test
     public void testNotNullTable() {
@@ -171,27 +179,91 @@ public class YdbStoragePluginTest {
 
             plugin.output(Arrays.asList(ev1, ev3, ev2));
 
-            ResultSetReader rs = executeQuery("SELECT * FROM logstash_notnull_test ORDER by ts");
-            Assertions.assertEquals(2, rs.getRowCount()); // ev2 skipped because doens't have value
+            List<Map<String, Value<?>>> rows = executeScanQuery("SELECT * FROM logstash_notnull_test ORDER by ts");
+            Assertions.assertEquals(2, rows.size()); // ev2 skipped because doens't have value
 
-            Assertions.assertTrue(rs.next());
+            Assertions.assertTrue(rows.get(0).containsKey("uuid"));
+            Assertions.assertEquals(TS1, rows.get(0).get("ts").asData().getTimestamp());
+            Assertions.assertArrayEquals("dev1".getBytes(), rows.get(0).get("device").asData().getBytes());
+            Assertions.assertEquals(1.5f, rows.get(0).get("value").asData().getFloat());
+            Assertions.assertEquals(1, rows.get(0).get("priority").asData().getUint8());
 
-            Assertions.assertNotNull(rs.getColumn("uuid").getText());
-            Assertions.assertEquals(TS1, rs.getColumn("ts").getTimestamp());
-            Assertions.assertArrayEquals("dev1".getBytes(), rs.getColumn("device").getBytes());
-            Assertions.assertEquals(1.5f, rs.getColumn("value").getFloat());
-            Assertions.assertEquals(1, rs.getColumn("priority").getUint8());
-
-            Assertions.assertTrue(rs.next());
-            Assertions.assertNotNull(rs.getColumn("uuid").getText());
-            Assertions.assertEquals(TS3, rs.getColumn("ts").getTimestamp());
-            Assertions.assertArrayEquals("dev3".getBytes(), rs.getColumn("device").getBytes());
-            Assertions.assertEquals(-1f, rs.getColumn("value").getFloat());
-            Assertions.assertEquals(0x100-2, rs.getColumn("priority").getUint8());
-
-            Assertions.assertFalse(rs.next());
+            Assertions.assertTrue(rows.get(1).containsKey("uuid"));
+            Assertions.assertEquals(TS3, rows.get(1).get("ts").asData().getTimestamp());
+            Assertions.assertArrayEquals("dev3".getBytes(), rows.get(1).get("device").asData().getBytes());
+            Assertions.assertEquals(-1f, rows.get(1).get("value").asData().getFloat());
+            Assertions.assertEquals(0x100-2, rows.get(1).get("priority").asData().getUint8());
         } finally {
             executeSchemeQuery("DROP TABLE logstash_notnull_test");
         }
    }
+
+   @Test
+    public void testColumnTable() {
+        executeSchemeQuery(""
+                + "CREATE TABLE logstash_column_test("
+                + "  id Text NOT NULL,"
+                + "  ts Timestamp NOT NULL,"
+                + "  device Text NOT NULL,"
+                + "  value Double,"
+                + "  priority Uint16,"
+                + "  PRIMARY KEY (id)"
+                + ") WITH (STORE = COLUMN);"
+        );
+
+        Map<String, Object> config = createConfigMap();
+        config.put(YdbStoragePlugin.TABLE_NAME.name(), "logstash_column_test");
+        config.put(YdbStoragePlugin.TIMESTAMP_COLUMN_NAME.name(), "ts");
+
+        try {
+            YdbStoragePlugin plugin = new YdbStoragePlugin("test-simple", new ConfigurationImpl(config), null);
+
+            Event ev1 = new org.logstash.Event();
+            ev1.setEventTimestamp(TS1);
+            ev1.setField("device", "dev1");
+            ev1.setField("value", 1.5d);
+            ev1.setField("priority", 1);
+
+            Event ev2 = new org.logstash.Event();
+            ev2.setEventTimestamp(TS2);
+            ev2.setField("device", "dev2");
+            ev2.setField("priority", -3);
+
+            Event ev3 = new org.logstash.Event();
+            ev3.setEventTimestamp(TS3);
+            ev3.setField("device", "dev3");
+            ev3.setField("value", -1f);
+            ev3.setField("priority", 2);
+
+            Event ev4 = new org.logstash.Event();
+            ev4.setEventTimestamp(TS2);
+            ev4.setField("value", -1f);
+            ev4.setField("priority", 2);
+
+            plugin.output(Arrays.asList(ev1, ev3, ev2, ev4));
+
+            List<Map<String, Value<?>>> rows = executeScanQuery("SELECT * FROM logstash_column_test ORDER by ts");
+            Assertions.assertEquals(3, rows.size());
+
+            Assertions.assertTrue(rows.get(0).containsKey("id"));
+            Assertions.assertEquals(TS1, rows.get(0).get("ts").asData().getTimestamp());
+            Assertions.assertEquals("dev1", rows.get(0).get("device").asData().getText());
+            Assertions.assertEquals(1.5d, rows.get(0).get("value").asOptional().get().asData().getDouble());
+            Assertions.assertEquals(1, rows.get(0).get("priority").asOptional().get().asData().getUint16());
+
+            Assertions.assertTrue(rows.get(1).containsKey("id"));
+            Assertions.assertEquals(TS2, rows.get(1).get("ts").asData().getTimestamp());
+            Assertions.assertEquals("dev2", rows.get(1).get("device").asData().getText());
+            Assertions.assertFalse(rows.get(1).get("value").asOptional().isPresent());
+            Assertions.assertEquals(0x10000-3, rows.get(1).get("priority").asOptional().get().asData().getUint16());
+
+            Assertions.assertTrue(rows.get(2).containsKey("id"));
+            Assertions.assertEquals(TS3, rows.get(2).get("ts").asData().getTimestamp());
+            Assertions.assertEquals("dev3", rows.get(2).get("device").asData().getText());
+            Assertions.assertEquals(-1d, rows.get(2).get("value").asOptional().get().asData().getDouble());
+            Assertions.assertEquals(2, rows.get(2).get("priority").asOptional().get().asData().getUint16());
+        } finally {
+            executeSchemeQuery("DROP TABLE logstash_column_test");
+        }
+    }
 }
