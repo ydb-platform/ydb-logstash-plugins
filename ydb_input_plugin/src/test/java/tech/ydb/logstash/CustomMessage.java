@@ -1,11 +1,14 @@
 package tech.ydb.logstash;
 
-import tech.ydb.topic.read.Message;
-import tech.ydb.topic.read.PartitionSession;
-
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import tech.ydb.topic.description.MetadataItem;
+import tech.ydb.topic.read.Message;
+import tech.ydb.topic.read.PartitionSession;
 
 public class CustomMessage implements Message {
 
@@ -69,5 +72,10 @@ public class CustomMessage implements Message {
         CompletableFuture<Void> future = new CompletableFuture<>();
         future.complete(null);
         return future;
+    }
+
+    @Override
+    public List<MetadataItem> getMetadataItems() {
+        return Collections.emptyList();
     }
 }

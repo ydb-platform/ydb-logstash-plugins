@@ -1,13 +1,13 @@
 package tech.ydb.logstash;
 
-import co.elastic.logstash.api.Event;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+
+import co.elastic.logstash.api.Event;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CustomEvent implements Event {
     private static final Logger logger = LoggerFactory.getLogger(CustomEvent.class);

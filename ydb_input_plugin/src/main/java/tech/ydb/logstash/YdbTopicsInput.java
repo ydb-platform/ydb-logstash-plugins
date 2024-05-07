@@ -1,4 +1,11 @@
-package org.logstashplugins;
+package tech.ydb.logstash;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import co.elastic.logstash.api.Configuration;
 import co.elastic.logstash.api.Context;
@@ -6,7 +13,6 @@ import co.elastic.logstash.api.Input;
 import co.elastic.logstash.api.LogstashPlugin;
 import co.elastic.logstash.api.PluginConfigSpec;
 
-import tech.ydb.logstash.MessageHandler;
 import tech.ydb.auth.AuthProvider;
 import tech.ydb.auth.NopAuthProvider;
 import tech.ydb.auth.TokenAuthProvider;
@@ -17,13 +23,6 @@ import tech.ydb.topic.read.AsyncReader;
 import tech.ydb.topic.settings.ReadEventHandlersSettings;
 import tech.ydb.topic.settings.ReaderSettings;
 import tech.ydb.topic.settings.TopicReadSettings;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * @author Mikhail Lukashev

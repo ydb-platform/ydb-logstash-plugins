@@ -1,6 +1,11 @@
 package tech.ydb.logstash;
 
-import tech.ydb.logstash.MessageProcessor;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,13 +16,6 @@ import org.slf4j.LoggerFactory;
 import tech.ydb.topic.read.Message;
 import tech.ydb.topic.read.events.AbstractReadEventHandler;
 import tech.ydb.topic.read.events.DataReceivedEvent;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 
 public class MessageHandler extends AbstractReadEventHandler {
     private final Logger logger = LoggerFactory.getLogger(MessageHandler.class);

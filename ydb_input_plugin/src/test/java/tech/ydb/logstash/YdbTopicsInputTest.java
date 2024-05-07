@@ -1,18 +1,15 @@
 package tech.ydb.logstash;
 
-import co.elastic.logstash.api.Configuration;
-import org.logstash.plugins.ConfigurationImpl;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.MockitoAnnotations;
-
 import java.util.*;
 import java.util.function.Consumer;
 
-import org.logstashplugins.YdbTopicsInput;
+import co.elastic.logstash.api.Configuration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.logstash.plugins.ConfigurationImpl;
 
 import tech.ydb.test.junit5.YdbHelperExtension;
 
@@ -23,12 +20,7 @@ public class YdbTopicsInputTest {
     private YdbTopicsInput input;
 
     private static String connectionString() {
-        StringBuilder connect = new StringBuilder()
-                .append(ydb.useTls() ? "grpcs://" : "grpc://")
-                .append(ydb.endpoint())
-                .append(ydb.database());
-
-        return connect.toString();
+        return ydb.useTls() ? "grpcs://" : "grpc://" + ydb.endpoint() + ydb.database();
     }
 
     @BeforeEach
@@ -44,7 +36,6 @@ public class YdbTopicsInputTest {
         Configuration config = new ConfigurationImpl(configValues);
 
         input = new YdbTopicsInput("test-input", config, null);
-        MockitoAnnotations.openMocks(this);
     }
 
     @AfterEach

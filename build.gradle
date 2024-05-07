@@ -1,8 +1,8 @@
 description = 'YDB LogStash plugins'
 
 allprojects {
-    group = 'org.logstashplugins'
-    version = '0.9.0'
+    group = 'tech.ydb.logstash'
+    version = '0.9.0-SNAPSHOT'
 }
 
 buildscript {
