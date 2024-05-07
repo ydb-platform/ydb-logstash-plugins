@@ -1,4 +1,4 @@
-package org.logstashplugins.util;
+package tech.ydb.logstash;
 
 import co.elastic.logstash.api.Event;
 import org.slf4j.Logger;

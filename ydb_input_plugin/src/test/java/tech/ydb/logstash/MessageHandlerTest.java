@@ -1,4 +1,7 @@
-package org.logstashplugins.util;
+package tech.ydb.logstash;
+
+import tech.ydb.logstash.CustomMessage;
+import tech.ydb.logstash.MessageHandler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+
 import tech.ydb.topic.read.events.DataReceivedEvent;
 import tech.ydb.topic.read.impl.events.DataReceivedEventImpl;
 

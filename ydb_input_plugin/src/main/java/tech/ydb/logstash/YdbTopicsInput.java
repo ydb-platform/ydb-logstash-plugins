@@ -6,7 +6,7 @@ import co.elastic.logstash.api.Input;
 import co.elastic.logstash.api.LogstashPlugin;
 import co.elastic.logstash.api.PluginConfigSpec;
 
-import org.logstashplugins.util.MessageHandler;
+import tech.ydb.logstash.MessageHandler;
 import tech.ydb.auth.AuthProvider;
 import tech.ydb.auth.NopAuthProvider;
 import tech.ydb.auth.TokenAuthProvider;

@@ -4,3 +4,9 @@ pluginInfo.pluginType      = "output"
 pluginInfo.pluginClass     = "YdbTopicsOutput"
 pluginInfo.pluginName      = "ydb_topics_output"
 
+dependencies {
+    implementation 'tech.ydb:ydb-sdk-topic:2.1.10'
+    implementation 'tech.ydb.auth:yc-auth-provider:2.1.1'
+
+    testImplementation 'tech.ydb.test:ydb-junit5-support:2.1.10'
+}

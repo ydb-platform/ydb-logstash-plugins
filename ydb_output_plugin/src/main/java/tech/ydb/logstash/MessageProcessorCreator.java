@@ -1,4 +1,4 @@
-package org.logstashplugins.util;
+package tech.ydb.logstash;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

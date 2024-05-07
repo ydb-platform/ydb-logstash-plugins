@@ -4,4 +4,10 @@ pluginInfo.pluginType  = "input"
 pluginInfo.pluginClass = "YdbTopicsInput"
 pluginInfo.pluginName  = "ydb_topics_input"
 
+dependencies {
+    implementation 'tech.ydb:ydb-sdk-topic:2.1.10'
+    implementation 'tech.ydb.auth:yc-auth-provider:2.1.1'
+
+    testImplementation 'tech.ydb.test:ydb-junit5-support:2.1.10'
+}
 

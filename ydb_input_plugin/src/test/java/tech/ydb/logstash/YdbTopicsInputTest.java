@@ -1,4 +1,4 @@
-package org.logstashplugins;
+package tech.ydb.logstash;
 
 import co.elastic.logstash.api.Configuration;
 import org.logstash.plugins.ConfigurationImpl;
@@ -11,6 +11,8 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.*;
 import java.util.function.Consumer;
+
+import org.logstashplugins.YdbTopicsInput;
 
 import tech.ydb.test.junit5.YdbHelperExtension;
 

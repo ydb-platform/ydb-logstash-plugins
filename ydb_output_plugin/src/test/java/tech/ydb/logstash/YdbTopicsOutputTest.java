@@ -1,8 +1,9 @@
-package org.logstashplugins;
+package tech.ydb.logstash;
+
+import tech.ydb.logstash.YdbTopicsOutput;
 
 import co.elastic.logstash.api.*;
 import org.logstash.plugins.ConfigurationImpl;
-import org.logstashplugins.util.CustomEvent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

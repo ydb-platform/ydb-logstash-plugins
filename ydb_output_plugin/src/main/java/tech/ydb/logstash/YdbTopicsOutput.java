@@ -1,4 +1,4 @@
-package org.logstashplugins;
+package tech.ydb.logstash;
 
 import co.elastic.logstash.api.Configuration;
 import co.elastic.logstash.api.Context;
@@ -7,10 +7,10 @@ import co.elastic.logstash.api.LogstashPlugin;
 import co.elastic.logstash.api.Output;
 import co.elastic.logstash.api.PluginConfigSpec;
 
-import org.logstashplugins.util.MessageProcessor;
-import org.logstashplugins.util.MessageProcessorCreator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import tech.ydb.auth.AuthProvider;
 import tech.ydb.auth.NopAuthProvider;
 import tech.ydb.auth.TokenAuthProvider;
