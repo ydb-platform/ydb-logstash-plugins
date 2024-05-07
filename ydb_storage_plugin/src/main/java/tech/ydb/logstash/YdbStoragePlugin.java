@@ -32,8 +32,8 @@ public class YdbStoragePlugin implements Output {
     public static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
 
     public static final PluginConfigSpec<String> TABLE_NAME = PluginConfigSpec.stringSetting("table_name", "logstash", false, true);
-    public static final PluginConfigSpec<String> ID_COLUMN_NAME = PluginConfigSpec.stringSetting("column_id", "id");
-    public static final PluginConfigSpec<String> TIMESTAMP_COLUMN_NAME = PluginConfigSpec.stringSetting("column_timestamp");
+    public static final PluginConfigSpec<String> UUID_COLUMN_NAME = PluginConfigSpec.stringSetting("uuid_column");
+    public static final PluginConfigSpec<String> TIMESTAMP_COLUMN_NAME = PluginConfigSpec.stringSetting("timestamp_column");
     public static final PluginConfigSpec<Map<String, Object>> COLUMNS = PluginConfigSpec.hashSetting("columns");
 
     private final String id;
@@ -61,7 +61,7 @@ public class YdbStoragePlugin implements Output {
 
         try {
             String tableName = cfg.get(TABLE_NAME);
-            String columnId = cfg.get(ID_COLUMN_NAME);
+            String columnId = cfg.get(UUID_COLUMN_NAME);
             String columnTimestamp = cfg.get(TIMESTAMP_COLUMN_NAME);
 
             this.tablePath = tableName.startsWith("/") ? tableName : ydbClient.getDatabase() + "/" + tableName;
@@ -120,7 +120,10 @@ public class YdbStoragePlugin implements Output {
             }
             return tableRowType.newValueUnsafe(fields);
         }).filter(Objects::nonNull).collect(Collectors.toList());
-        client.bulkUpsert(tablePath, ListType.of(tableRowType).newValue(eventToWrite));
+
+        if (!eventToWrite.isEmpty()) {
+            client.bulkUpsert(tablePath, ListType.of(tableRowType).newValue(eventToWrite));
+        }
     }
 
     @Override
@@ -136,14 +139,13 @@ public class YdbStoragePlugin implements Output {
 
     @Override
     public Collection<PluginConfigSpec<?>> configSchema() {
-        return Arrays.asList(
-                CONNECTION,
+        return Arrays.asList(CONNECTION,
                 SA_KEY_FILE,
                 TOKEN_AUTH,
                 TOKEN_FILE,
                 USE_METADATA,
                 TABLE_NAME,
-                ID_COLUMN_NAME,
+                UUID_COLUMN_NAME,
                 TIMESTAMP_COLUMN_NAME,
                 COLUMNS
         );
