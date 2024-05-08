@@ -25,16 +25,16 @@ public class YdbStoragePlugin implements Output {
         Value<?> readField(Event event);
     }
 
-    public static final PluginConfigSpec<String> CONNECTION = PluginConfigSpec.requiredStringSetting("connection_string");
-    public static final PluginConfigSpec<String> SA_KEY_FILE = PluginConfigSpec.stringSetting("sa_key_file");
-    public static final PluginConfigSpec<String> TOKEN_AUTH = PluginConfigSpec.stringSetting("token_auth");
-    public static final PluginConfigSpec<String> TOKEN_FILE = PluginConfigSpec.stringSetting("token_file");
-    public static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
+    static final PluginConfigSpec<String> CONNECTION = PluginConfigSpec.requiredStringSetting("connection_string");
+    static final PluginConfigSpec<String> SA_KEY_FILE = PluginConfigSpec.stringSetting("sa_key_file");
+    static final PluginConfigSpec<String> TOKEN_AUTH = PluginConfigSpec.stringSetting("token_auth");
+    static final PluginConfigSpec<String> TOKEN_FILE = PluginConfigSpec.stringSetting("token_file");
+    static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
 
-    public static final PluginConfigSpec<String> TABLE_NAME = PluginConfigSpec.stringSetting("table_name", "logstash", false, true);
-    public static final PluginConfigSpec<String> UUID_COLUMN_NAME = PluginConfigSpec.stringSetting("uuid_column");
-    public static final PluginConfigSpec<String> TIMESTAMP_COLUMN_NAME = PluginConfigSpec.stringSetting("timestamp_column");
-    public static final PluginConfigSpec<Map<String, Object>> COLUMNS = PluginConfigSpec.hashSetting("columns");
+    static final PluginConfigSpec<String> TABLE_NAME = PluginConfigSpec.requiredStringSetting("table_name");
+    static final PluginConfigSpec<String> UUID_COLUMN_NAME = PluginConfigSpec.stringSetting("uuid_column");
+    static final PluginConfigSpec<String> TIMESTAMP_COLUMN_NAME = PluginConfigSpec.stringSetting("timestamp_column");
+    static final PluginConfigSpec<Map<String, Object>> COLUMNS = PluginConfigSpec.hashSetting("columns");
 
     private final String id;
     private final String tablePath;

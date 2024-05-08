@@ -1,13 +1,19 @@
 package tech.ydb.logstash;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Optional;
+
 import co.elastic.logstash.api.Configuration;
 import co.elastic.logstash.api.Context;
 import co.elastic.logstash.api.Event;
 import co.elastic.logstash.api.LogstashPlugin;
 import co.elastic.logstash.api.Output;
 import co.elastic.logstash.api.PluginConfigSpec;
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,14 +23,10 @@ import tech.ydb.auth.TokenAuthProvider;
 import tech.ydb.auth.iam.CloudAuthHelper;
 import tech.ydb.core.grpc.GrpcTransport;
 import tech.ydb.topic.TopicClient;
+import tech.ydb.topic.settings.WriterSettings;
 import tech.ydb.topic.write.AsyncWriter;
 import tech.ydb.topic.write.Message;
-import tech.ydb.topic.settings.WriterSettings;
 import tech.ydb.topic.write.QueueOverflowException;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
 
 
 /**
@@ -32,57 +34,34 @@ import java.util.Iterator;
  */
 @LogstashPlugin(name = "ydb_topics_output")
 public class YdbTopicsOutput implements Output {
-
-    public static final PluginConfigSpec<String> PREFIX_CONFIG = PluginConfigSpec.stringSetting("prefix", "");
-    private final MessageProcessor messageProcessor = MessageProcessorCreator::processJsonString;
     private final Logger logger = LoggerFactory.getLogger(YdbTopicsOutput.class);
-    private AuthProvider authProvider = NopAuthProvider.INSTANCE;
-    private volatile boolean stopped = false;
-    private final String topicPath;
-    private final String producerId;
-    private final String connectionString;
+
+    static final PluginConfigSpec<String> CONNECTION = PluginConfigSpec.requiredStringSetting("connection_string");
+    static final PluginConfigSpec<String> SA_KEY_FILE = PluginConfigSpec.stringSetting("sa_key_file");
+    static final PluginConfigSpec<String> TOKEN_AUTH = PluginConfigSpec.stringSetting("token_auth");
+    static final PluginConfigSpec<String> TOKEN_FILE = PluginConfigSpec.stringSetting("token_file");
+    static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
+
+    static final PluginConfigSpec<String> TOPIC_PATH = PluginConfigSpec.stringSetting("topic_path");
+    static final PluginConfigSpec<String> PRODUCER_ID = PluginConfigSpec.stringSetting("producer_id");
+
+    private final MessageProcessor messageProcessor = MessageProcessorCreator::processJsonString;
     private final String id;
-    private String currentMessage;
-    private GrpcTransport transport;
-    private TopicClient topicClient;
-    private AsyncWriter asyncWriter;
+    private final GrpcTransport transport;
+    private final TopicClient topicClient;
+    private final AsyncWriter asyncWriter;
 
     public YdbTopicsOutput(String id, Configuration config, Context context) {
         this.id = id;
-        topicPath = config.get(PluginConfigSpec.stringSetting("topic_path"));
-        connectionString = config.get(PluginConfigSpec.stringSetting("connection_string"));
-        producerId = config.get(PluginConfigSpec.stringSetting("producer_id"));
+        String topicPath = config.get(TOPIC_PATH);
+        String connectionString = config.get(CONNECTION);
+        String producerId = config.get(PRODUCER_ID);
 
-        String accessToken = config.get(PluginConfigSpec.stringSetting("access_token"));
-        if (accessToken != null) {
-            authProvider = new TokenAuthProvider(accessToken);
-        } else {
-            String saKeyFile = config.get(PluginConfigSpec.stringSetting("service_account_key"));
-            if (saKeyFile != null) {
-                authProvider = CloudAuthHelper.getServiceAccountFileAuthProvider(saKeyFile);
-            }
-        }
-    }
-
-    @Override
-    public void output(Collection<Event> events) {
-        initializeTransport();
-        initializeWriter();
-        Iterator<Event> z = events.iterator();
-        while (z.hasNext() && !stopped) {
-            byte[] message = messageProcessor.process(z.next().getData());
-            sendMessage(message);
-        }
-    }
-
-    private void initializeTransport() {
         transport = GrpcTransport.forConnectionString(connectionString)
-                .withAuthProvider(authProvider)
+                .withAuthProvider(createAuthProvider(config))
                 .build();
         topicClient = TopicClient.newClient(transport).build();
-    }
 
-    private void initializeWriter() {
         WriterSettings settings = WriterSettings.newBuilder()
                 .setTopicPath(topicPath)
                 .setProducerId(producerId)
@@ -92,10 +71,23 @@ public class YdbTopicsOutput implements Output {
         asyncWriter.init();
     }
 
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public void output(Collection<Event> events) {
+        Iterator<Event> z = events.iterator();
+        while (z.hasNext()) {
+            byte[] message = messageProcessor.process(z.next().getData());
+            sendMessage(message);
+        }
+    }
+
     private void sendMessage(byte[] message) {
         try {
             asyncWriter.send(Message.of(message));
-            currentMessage = new String(message);
         } catch (QueueOverflowException e) {
             logger.error("Error sending message to YDB Topics: " + e.getMessage(), e);
         }
@@ -105,7 +97,6 @@ public class YdbTopicsOutput implements Output {
     public void stop() {
         asyncWriter.shutdown();
         transport.close();
-        stopped = true;
     }
 
     @Override
@@ -115,15 +106,44 @@ public class YdbTopicsOutput implements Output {
 
     @Override
     public Collection<PluginConfigSpec<?>> configSchema() {
-        return Collections.singletonList(PREFIX_CONFIG);
+        return Arrays.asList(CONNECTION,
+                SA_KEY_FILE,
+                TOKEN_AUTH,
+                TOKEN_FILE,
+                USE_METADATA,
+
+                TOPIC_PATH,
+                PRODUCER_ID
+        );
     }
 
-    @Override
-    public String getId() {
-        return id;
-    }
+    private static AuthProvider createAuthProvider(Configuration config) {
+        String saKeyFile = config.get(SA_KEY_FILE);
+        if (saKeyFile != null && !saKeyFile.isEmpty()) {
+            return CloudAuthHelper.getServiceAccountFileAuthProvider(saKeyFile);
+        }
+        String tokenAuth = config.get(TOKEN_AUTH);
+        if (tokenAuth != null && !tokenAuth.isEmpty()) {
+            return new TokenAuthProvider(tokenAuth);
+        }
 
-    public String getCurrentMessage() {
-        return currentMessage;
+        String tokenFile = config.get(TOKEN_FILE);
+        if (tokenFile != null && !tokenFile.isEmpty()) {
+            try {
+                Optional<String> token = Files.lines(Paths.get(tokenFile)).findFirst();
+                if (token.isPresent()) {
+                    return new TokenAuthProvider(token.get());
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Cannot read token from " + tokenFile, e);
+            }
+        }
+
+        Boolean useMetadata = config.get(USE_METADATA);
+        if (useMetadata != null && useMetadata) {
+            return CloudAuthHelper.getMetadataAuthProvider();
+        }
+
+        return NopAuthProvider.INSTANCE;
     }
 }

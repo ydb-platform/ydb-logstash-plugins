@@ -1,10 +1,14 @@
 package tech.ydb.logstash;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import co.elastic.logstash.api.Configuration;
@@ -29,12 +33,15 @@ import tech.ydb.topic.settings.TopicReadSettings;
  */
 @LogstashPlugin(name = "ydb_topics_input")
 public class YdbTopicsInput implements Input {
+    static final PluginConfigSpec<String> CONNECTION = PluginConfigSpec.requiredStringSetting("connection_string");
+    static final PluginConfigSpec<String> SA_KEY_FILE = PluginConfigSpec.stringSetting("sa_key_file");
+    static final PluginConfigSpec<String> TOKEN_AUTH = PluginConfigSpec.stringSetting("token_auth");
+    static final PluginConfigSpec<String> TOKEN_FILE = PluginConfigSpec.stringSetting("token_file");
+    static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
 
-    public static final PluginConfigSpec<Long> EVENT_COUNT_CONFIG =
-            PluginConfigSpec.numSetting("count", 3);
-
-    public static final PluginConfigSpec<String> PREFIX_CONFIG =
-            PluginConfigSpec.stringSetting("prefix", "message");
+    static final PluginConfigSpec<String> TOPIC_PATH = PluginConfigSpec.stringSetting("topic_path");
+    static final PluginConfigSpec<String> CONSUMER_NAME = PluginConfigSpec.stringSetting("consumer_name");
+    static final PluginConfigSpec<String> SCHEMA = PluginConfigSpec.stringSetting("schema");
 
     private final String topicPath;
     private final String connectionString;
@@ -46,29 +53,29 @@ public class YdbTopicsInput implements Input {
     private AsyncReader reader;
     private GrpcTransport transport;
     private AuthProvider authProvider = NopAuthProvider.INSTANCE;
-    private volatile boolean stopped = false;
 
     public YdbTopicsInput(String id, Configuration config, Context context) {
         this.id = id;
-        topicPath = config.get(PluginConfigSpec.stringSetting("topic_path"));
-        connectionString = config.get(PluginConfigSpec.stringSetting("connection_string"));
-        consumerName = config.get(PluginConfigSpec.stringSetting("consumer_name"));
-        schema = config.get(PluginConfigSpec.stringSetting("schema"));
 
-        String accessToken = config.get(PluginConfigSpec.stringSetting("access_token"));
-        if (accessToken != null) {
-            authProvider = new TokenAuthProvider(accessToken);
-        } else {
-            String saKeyFile = config.get(PluginConfigSpec.stringSetting("service_account_key"));
-            if (saKeyFile != null) {
-                authProvider = CloudAuthHelper.getServiceAccountFileAuthProvider(saKeyFile);
-            }
-        }
+        this.connectionString = config.get(CONNECTION);
+        this.authProvider = createAuthProvider(config);
+
+        this.topicPath = config.get(TOPIC_PATH);
+        this.consumerName = config.get(CONSUMER_NAME);
+        this.schema = config.get(SCHEMA);
+    }
+
+    @Override
+    public String getId() {
+        return this.id;
     }
 
     @Override
     public void start(Consumer<Map<String, Object>> consumer) {
-        initialize();
+        transport = GrpcTransport.forConnectionString(connectionString)
+                .withAuthProvider(authProvider)
+                .build();
+        topicClient = TopicClient.newClient(transport).build();
 
         ReaderSettings settings = ReaderSettings.newBuilder()
                 .setConsumerName(consumerName)
@@ -87,18 +94,10 @@ public class YdbTopicsInput implements Input {
         reader.init();
     }
 
-    private void initialize() {
-        transport = GrpcTransport.forConnectionString(connectionString)
-                .withAuthProvider(authProvider)
-                .build();
-        topicClient = TopicClient.newClient(transport).build();
-    }
-
     @Override
     public void stop() {
         reader.shutdown();
-        closeTransport();
-        stopped = true;
+        transport.close();
     }
 
     @Override
@@ -106,21 +105,47 @@ public class YdbTopicsInput implements Input {
 
     }
 
-    private void closeTransport() {
-        transport.close();
-    }
-
     @Override
     public Collection<PluginConfigSpec<?>> configSchema() {
-        return Arrays.asList(EVENT_COUNT_CONFIG, PREFIX_CONFIG);
+        return Arrays.asList(CONNECTION,
+                SA_KEY_FILE,
+                TOKEN_AUTH,
+                TOKEN_FILE,
+                USE_METADATA,
+
+                TOPIC_PATH,
+                CONSUMER_NAME,
+                SCHEMA
+        );
     }
 
-    @Override
-    public String getId() {
-        return this.id;
-    }
+    private static AuthProvider createAuthProvider(Configuration config) {
+        String saKeyFile = config.get(SA_KEY_FILE);
+        if (saKeyFile != null && !saKeyFile.isEmpty()) {
+            return CloudAuthHelper.getServiceAccountFileAuthProvider(saKeyFile);
+        }
+        String tokenAuth = config.get(TOKEN_AUTH);
+        if (tokenAuth != null && !tokenAuth.isEmpty()) {
+            return new TokenAuthProvider(tokenAuth);
+        }
 
-    public boolean getIsStopped() {
-        return stopped;
+        String tokenFile = config.get(TOKEN_FILE);
+        if (tokenFile != null && !tokenFile.isEmpty()) {
+            try {
+                Optional<String> token = Files.lines(Paths.get(tokenFile)).findFirst();
+                if (token.isPresent()) {
+                    return new TokenAuthProvider(token.get());
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Cannot read token from " + tokenFile, e);
+            }
+        }
+
+        Boolean useMetadata = config.get(USE_METADATA);
+        if (useMetadata != null && useMetadata) {
+            return CloudAuthHelper.getMetadataAuthProvider();
+        }
+
+        return NopAuthProvider.INSTANCE;
     }
 }
