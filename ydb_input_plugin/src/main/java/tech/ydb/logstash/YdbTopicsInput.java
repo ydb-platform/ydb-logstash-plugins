@@ -3,12 +3,11 @@ package tech.ydb.logstash;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 import co.elastic.logstash.api.Configuration;
@@ -39,30 +38,36 @@ public class YdbTopicsInput implements Input {
     static final PluginConfigSpec<String> TOKEN_FILE = PluginConfigSpec.stringSetting("token_file");
     static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
 
-    static final PluginConfigSpec<String> TOPIC_PATH = PluginConfigSpec.stringSetting("topic_path");
-    static final PluginConfigSpec<String> CONSUMER_NAME = PluginConfigSpec.stringSetting("consumer_name");
+    static final PluginConfigSpec<String> TOPIC_PATH = PluginConfigSpec.requiredStringSetting("topic_path");
+    static final PluginConfigSpec<String> CONSUMER_NAME = PluginConfigSpec.requiredStringSetting("consumer_name");
     static final PluginConfigSpec<String> SCHEMA = PluginConfigSpec.stringSetting("schema");
 
     private final String topicPath;
-    private final String connectionString;
     private final String id;
     private final String consumerName;
     private final String schema;
 
-    private TopicClient topicClient;
+    private final TopicClient topicClient;
+    private final GrpcTransport transport;
+    private final CountDownLatch stopped = new CountDownLatch(1);
+
     private AsyncReader reader;
-    private GrpcTransport transport;
-    private AuthProvider authProvider = NopAuthProvider.INSTANCE;
 
     public YdbTopicsInput(String id, Configuration config, Context context) {
         this.id = id;
 
-        this.connectionString = config.get(CONNECTION);
-        this.authProvider = createAuthProvider(config);
+        String connectionString = config.get(CONNECTION);
+        AuthProvider authProvider = createAuthProvider(config);
 
         this.topicPath = config.get(TOPIC_PATH);
         this.consumerName = config.get(CONSUMER_NAME);
         this.schema = config.get(SCHEMA);
+
+        this.transport = GrpcTransport.forConnectionString(connectionString)
+                .withAuthProvider(authProvider)
+                .build();
+        this.topicClient = TopicClient.newClient(transport).build();
+
     }
 
     @Override
@@ -72,22 +77,13 @@ public class YdbTopicsInput implements Input {
 
     @Override
     public void start(Consumer<Map<String, Object>> consumer) {
-        transport = GrpcTransport.forConnectionString(connectionString)
-                .withAuthProvider(authProvider)
+        ReadEventHandlersSettings handlerSettings = ReadEventHandlersSettings.newBuilder()
+                .setEventHandler(new MessageHandler(consumer, schema))
                 .build();
-        topicClient = TopicClient.newClient(transport).build();
 
         ReaderSettings settings = ReaderSettings.newBuilder()
                 .setConsumerName(consumerName)
-                .addTopic(TopicReadSettings.newBuilder()
-                        .setPath(topicPath)
-                        .setReadFrom(Instant.now().minus(Duration.ofHours(24)))
-                        .setMaxLag(Duration.ofMinutes(30))
-                        .build())
-                .build();
-
-        ReadEventHandlersSettings handlerSettings = ReadEventHandlersSettings.newBuilder()
-                .setEventHandler(new MessageHandler(consumer, schema))
+                .addTopic(TopicReadSettings.newBuilder().setPath(topicPath).build())
                 .build();
 
         reader = topicClient.createAsyncReader(settings, handlerSettings);
@@ -96,13 +92,16 @@ public class YdbTopicsInput implements Input {
 
     @Override
     public void stop() {
-        reader.shutdown();
-        transport.close();
+        reader.shutdown().thenRun(() -> {
+            topicClient.close();
+            transport.close();
+            stopped.countDown();
+        });
     }
 
     @Override
     public void awaitStop() throws InterruptedException {
-
+        stopped.await();
     }
 
     @Override
