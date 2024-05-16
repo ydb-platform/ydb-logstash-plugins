@@ -1,8 +1,8 @@
 description = "YDB Logstash Storage plugin"
 
 pluginInfo.pluginType  = "storage"
-pluginInfo.pluginClass = "YdbStoragePlugin"
-pluginInfo.pluginName  = "ydb_storage_plugin"
+pluginInfo.pluginClass = "YdbStorage"
+pluginInfo.pluginName  = "ydb_storage"
 
 dependencies {
     implementation 'tech.ydb:ydb-sdk-table:2.1.10'

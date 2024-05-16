@@ -67,9 +67,9 @@ public class YdbStoragePluginTest {
         Map<String, Object> config = new HashMap<>();
         String connectionString = ydb.useTls() ? "grpcs://" : "grpc://" + ydb.endpoint() + ydb.database();
 
-        config.put(YdbStoragePlugin.CONNECTION.name(), connectionString);
+        config.put(YdbStorage.CONNECTION.name(), connectionString);
         if (ydb.authToken() != null) {
-            config.put(YdbStoragePlugin.TOKEN_AUTH.name(), ydb.authToken());
+            config.put(YdbStorage.TOKEN_AUTH.name(), ydb.authToken());
         }
 
         return config;
@@ -89,12 +89,12 @@ public class YdbStoragePluginTest {
         );
 
         Map<String, Object> config = createConfigMap();
-        config.put(YdbStoragePlugin.TABLE_NAME.name(), "logstash_simple_test");
-        config.put(YdbStoragePlugin.UUID_COLUMN_NAME.name(), "id");
-        config.put(YdbStoragePlugin.TIMESTAMP_COLUMN_NAME.name(), "ts");
+        config.put(YdbStorage.TABLE_NAME.name(), "logstash_simple_test");
+        config.put(YdbStorage.UUID_COLUMN_NAME.name(), "id");
+        config.put(YdbStorage.TIMESTAMP_COLUMN_NAME.name(), "ts");
 
         try {
-            YdbStoragePlugin plugin = new YdbStoragePlugin("test-simple", new ConfigurationImpl(config), null);
+            YdbStorage plugin = new YdbStorage("test-simple", new ConfigurationImpl(config), null);
 
             Event ev1 = new org.logstash.Event();
             ev1.setEventTimestamp(TS1);
@@ -154,11 +154,11 @@ public class YdbStoragePluginTest {
         );
 
         Map<String, Object> config = createConfigMap();
-        config.put(YdbStoragePlugin.TABLE_NAME.name(), "logstash_notnull_test");
-        config.put(YdbStoragePlugin.TIMESTAMP_COLUMN_NAME.name(), "ts");
+        config.put(YdbStorage.TABLE_NAME.name(), "logstash_notnull_test");
+        config.put(YdbStorage.TIMESTAMP_COLUMN_NAME.name(), "ts");
 
         try {
-            YdbStoragePlugin plugin = new YdbStoragePlugin("test-notnull", new ConfigurationImpl(config), null);
+            YdbStorage plugin = new YdbStorage("test-notnull", new ConfigurationImpl(config), null);
 
             Event ev1 = new org.logstash.Event();
             ev1.setEventTimestamp(TS1);
@@ -215,11 +215,11 @@ public class YdbStoragePluginTest {
         );
 
         Map<String, Object> config = createConfigMap();
-        config.put(YdbStoragePlugin.TABLE_NAME.name(), "logstash_column_test");
-        config.put(YdbStoragePlugin.TIMESTAMP_COLUMN_NAME.name(), "ts");
+        config.put(YdbStorage.TABLE_NAME.name(), "logstash_column_test");
+        config.put(YdbStorage.TIMESTAMP_COLUMN_NAME.name(), "ts");
 
         try {
-            YdbStoragePlugin plugin = new YdbStoragePlugin("test-column", new ConfigurationImpl(config), null);
+            YdbStorage plugin = new YdbStorage("test-column", new ConfigurationImpl(config), null);
 
             Event ev1 = new org.logstash.Event();
             ev1.setEventTimestamp(TS1);

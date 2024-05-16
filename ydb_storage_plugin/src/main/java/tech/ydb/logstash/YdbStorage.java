@@ -19,8 +19,8 @@ import tech.ydb.table.description.TableDescription;
 import tech.ydb.table.values.*;
 
 // class name must match plugin name
-@LogstashPlugin(name = "ydb_storage_plugin")
-public class YdbStoragePlugin implements Output {
+@LogstashPlugin(name = "ydb_storage")
+public class YdbStorage implements Output {
     private interface FieldReader {
         Value<?> readField(Event event);
     }
@@ -47,11 +47,11 @@ public class YdbStoragePlugin implements Output {
     private final CountDownLatch stopped = new CountDownLatch(1);
 
     // all plugins must provide a constructor that accepts id, Configuration, and Context
-    public YdbStoragePlugin(String id, Configuration cfg, Context ctx) {
+    public YdbStorage(String id, Configuration cfg, Context ctx) {
         this(id, cfg, ctx, YdbClientImpl::new, UUID::randomUUID);
     }
 
-    YdbStoragePlugin(String id, Configuration cfg, Context ctx, YdbClient.Factory factory, Supplier<UUID> uuidSupplier) {
+    YdbStorage(String id, Configuration cfg, Context ctx, YdbClient.Factory factory, Supplier<UUID> uuidSupplier) {
         this.id = id;
 //        this.logger = context.getLogger();
 
