@@ -2,7 +2,7 @@ description = 'YDB LogStash plugins'
 
 allprojects {
     group = 'tech.ydb.logstash'
-    version = '0.9.0-SNAPSHOT'
+    version = '0.9.5'
 }
 
 buildscript {
@@ -32,7 +32,7 @@ subprojects {
     pluginInfo.longDescription = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using \$LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
     pluginInfo.authors         = ['Mike Lukashev', 'Sergey Provolovich', 'Alexandr Gorshenin']
     pluginInfo.email           = ['alexadr268@ydb.tech']
-    pluginInfo.homepage        = "https://ydb.tech/docs/en/"
+    pluginInfo.homepage        = "https://ydb.tech/"
     // ===========================================================================
 
     sourceCompatibility = 1.8
