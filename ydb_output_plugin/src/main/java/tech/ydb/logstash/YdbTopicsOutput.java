@@ -5,8 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 
 import co.elastic.logstash.api.Configuration;
 import co.elastic.logstash.api.Context;
@@ -42,20 +43,19 @@ public class YdbTopicsOutput implements Output {
     static final PluginConfigSpec<String> TOKEN_FILE = PluginConfigSpec.stringSetting("token_file");
     static final PluginConfigSpec<Boolean> USE_METADATA = PluginConfigSpec.booleanSetting("use_metadata");
 
-    static final PluginConfigSpec<String> TOPIC_PATH = PluginConfigSpec.stringSetting("topic_path");
-    static final PluginConfigSpec<String> PRODUCER_ID = PluginConfigSpec.stringSetting("producer_id");
+    static final PluginConfigSpec<String> TOPIC_PATH = PluginConfigSpec.requiredStringSetting("topic_path");
 
-    private final MessageProcessor messageProcessor = MessageProcessorCreator::processJsonString;
+    private final Function<Event, Message> convertor = MessageProcessor::processJsonString;
     private final String id;
     private final GrpcTransport transport;
     private final TopicClient topicClient;
     private final AsyncWriter asyncWriter;
+    private final CountDownLatch stopped = new CountDownLatch(1);
 
     public YdbTopicsOutput(String id, Configuration config, Context context) {
         this.id = id;
         String topicPath = config.get(TOPIC_PATH);
         String connectionString = config.get(CONNECTION);
-        String producerId = config.get(PRODUCER_ID);
 
         transport = GrpcTransport.forConnectionString(connectionString)
                 .withAuthProvider(createAuthProvider(config))
@@ -64,8 +64,6 @@ public class YdbTopicsOutput implements Output {
 
         WriterSettings settings = WriterSettings.newBuilder()
                 .setTopicPath(topicPath)
-                .setProducerId(producerId)
-                .setMessageGroupId(producerId)
                 .build();
         asyncWriter = topicClient.createAsyncWriter(settings);
         asyncWriter.init();
@@ -78,16 +76,10 @@ public class YdbTopicsOutput implements Output {
 
     @Override
     public void output(Collection<Event> events) {
-        Iterator<Event> z = events.iterator();
-        while (z.hasNext()) {
-            byte[] message = messageProcessor.process(z.next().getData());
-            sendMessage(message);
-        }
-    }
-
-    private void sendMessage(byte[] message) {
         try {
-            asyncWriter.send(Message.of(message));
+            for (Event event : events) {
+                asyncWriter.send(convertor.apply(event));
+            }
         } catch (QueueOverflowException e) {
             logger.error("Error sending message to YDB Topics: " + e.getMessage(), e);
         }
@@ -95,13 +87,16 @@ public class YdbTopicsOutput implements Output {
 
     @Override
     public void stop() {
-        asyncWriter.shutdown();
-        transport.close();
+        asyncWriter.shutdown().thenRun(() -> {
+            topicClient.close();
+            transport.close();
+            stopped.countDown();
+        });
     }
 
     @Override
     public void awaitStop() throws InterruptedException {
-
+        stopped.await();
     }
 
     @Override
@@ -112,8 +107,7 @@ public class YdbTopicsOutput implements Output {
                 TOKEN_FILE,
                 USE_METADATA,
 
-                TOPIC_PATH,
-                PRODUCER_ID
+                TOPIC_PATH
         );
     }
 
