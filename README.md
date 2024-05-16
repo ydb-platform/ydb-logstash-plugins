@@ -1,4 +1,5 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ydb-platform/ydb-logstash-plugins/blob/main/LICENSE)
+[![Build](https://img.shields.io/github/actions/workflow/status/ydb-platform/ydb-logstash-plugins/build.yaml)](https://github.com/ydb-platform/ydb-logstash-plugins/actions/workflows/build.yaml)
 
 # YDB LogStash plugins for [YDB](https://ydb.tech/).
 
