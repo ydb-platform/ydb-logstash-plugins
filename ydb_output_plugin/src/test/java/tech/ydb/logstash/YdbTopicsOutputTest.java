@@ -39,9 +39,9 @@ public class YdbTopicsOutputTest {
         Map<String, Object> config = new HashMap<>();
         String connectionString = ydb.useTls() ? "grpcs://" : "grpc://" + ydb.endpoint() + ydb.database();
 
-        config.put(YdbTopicsOutput.CONNECTION.name(), connectionString);
+        config.put(YdbTopic.CONNECTION.name(), connectionString);
         if (ydb.authToken() != null) {
-            config.put(YdbTopicsOutput.TOKEN_AUTH.name(), ydb.authToken());
+            config.put(YdbTopic.TOKEN_AUTH.name(), ydb.authToken());
         }
 
         return config;
@@ -65,9 +65,9 @@ public class YdbTopicsOutputTest {
             reader.init();
 
             Map<String, Object> config = createConfigMap();
-            config.put(YdbTopicsOutput.TOPIC_PATH.name(), topicPath);
+            config.put(YdbTopic.TOPIC_PATH.name(), topicPath);
 
-            YdbTopicsOutput plugin = new YdbTopicsOutput("test-simple", new ConfigurationImpl(config), null);
+            YdbTopic plugin = new YdbTopic("test-simple", new ConfigurationImpl(config), null);
 
             Event ev1 = new org.logstash.Event();
             ev1.setEventTimestamp(TS1);

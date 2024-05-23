@@ -40,9 +40,9 @@ public class YdbTopicsInputTest {
         Map<String, Object> config = new HashMap<>();
         String connectionString = ydb.useTls() ? "grpcs://" : "grpc://" + ydb.endpoint() + ydb.database();
 
-        config.put(YdbTopicsInput.CONNECTION.name(), connectionString);
+        config.put(YdbTopic.CONNECTION.name(), connectionString);
         if (ydb.authToken() != null) {
-            config.put(YdbTopicsInput.TOKEN_AUTH.name(), ydb.authToken());
+            config.put(YdbTopic.TOKEN_AUTH.name(), ydb.authToken());
         }
 
         return config;
@@ -71,10 +71,10 @@ public class YdbTopicsInputTest {
             writer.send(RAW_M3);
 
             Map<String, Object> config = createConfigMap();
-            config.put(YdbTopicsInput.TOPIC_PATH.name(), topicPath);
-            config.put(YdbTopicsInput.CONSUMER_NAME.name(), consumerName);
+            config.put(YdbTopic.TOPIC_PATH.name(), topicPath);
+            config.put(YdbTopic.CONSUMER_NAME.name(), consumerName);
 
-            YdbTopicsInput plugin = new YdbTopicsInput("test-simple", new ConfigurationImpl(config), null);
+            YdbTopic plugin = new YdbTopic("test-simple", new ConfigurationImpl(config), null);
             BlockingQueue<Map<String, Object>> queue = new ArrayBlockingQueue<>(10);
             plugin.start(queue::add);
 
@@ -100,10 +100,10 @@ public class YdbTopicsInputTest {
     }
 
     private void assertRawMessage(Map<String, Object> map, Message msg) {
-        Assertions.assertTrue(map.containsKey("message"));
-        Object eventData = map.get("message");
-        Assertions.assertTrue(eventData instanceof byte[]);
-        Assertions.assertArrayEquals((byte[]) eventData, msg.getData());
+        Assertions.assertTrue(map.containsKey("base64"));
+        Object eventData = map.get("base64");
+        Assertions.assertTrue(eventData instanceof String);
+        Assertions.assertArrayEquals(Base64.getDecoder().decode((String) eventData), msg.getData());
     }
 
     @Test
@@ -129,11 +129,11 @@ public class YdbTopicsInputTest {
             writer.send(JSON_M3);
 
             Map<String, Object> config = createConfigMap();
-            config.put(YdbTopicsInput.TOPIC_PATH.name(), topicPath);
-            config.put(YdbTopicsInput.CONSUMER_NAME.name(), consumerName);
-            config.put(YdbTopicsInput.SCHEMA.name(), "JSON");
+            config.put(YdbTopic.TOPIC_PATH.name(), topicPath);
+            config.put(YdbTopic.CONSUMER_NAME.name(), consumerName);
+            config.put(YdbTopic.SCHEMA.name(), "JSON");
 
-            YdbTopicsInput plugin = new YdbTopicsInput("test-json", new ConfigurationImpl(config), null);
+            YdbTopic plugin = new YdbTopic("test-json", new ConfigurationImpl(config), null);
             BlockingQueue<Map<String, Object>> queue = new ArrayBlockingQueue<>(10);
             plugin.start(queue::add);
 
@@ -141,13 +141,12 @@ public class YdbTopicsInputTest {
             assertJsonMessage2(queue.poll(1, TimeUnit.SECONDS));
             assertJsonMessage3(queue.poll(1, TimeUnit.SECONDS));
 
-            writer.send(RAW_M1);
+            writer.send(RAW_M1); // will be ignored
             writer.send(JSON_M3);
             writer.send(JSON_M1);
             writer.send(JSON_M2);
             writer.flush();
 
-            assertRawMessage(queue.poll(1, TimeUnit.SECONDS), RAW_M1);
             assertJsonMessage3(queue.poll(1, TimeUnit.SECONDS));
             assertJsonMessage1(queue.poll(1, TimeUnit.SECONDS));
             assertJsonMessage2(queue.poll(1, TimeUnit.SECONDS));

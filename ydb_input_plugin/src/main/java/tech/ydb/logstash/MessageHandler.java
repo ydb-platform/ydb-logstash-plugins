@@ -1,6 +1,7 @@
 package tech.ydb.logstash;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,7 +41,10 @@ public class MessageHandler extends AbstractReadEventHandler {
     public void onMessages(DataReceivedEvent event) {
         for (Message message : event.getMessages()) {
             logger.debug("Message received. SeqNo={}, offset={}", message.getSeqNo(), message.getOffset());
-            consumer.accept(messageProcessor.apply(message));
+            Map<String, Object> map = messageProcessor.apply(message);
+            if (map != null) {
+                consumer.accept(map);
+            }
             message.commit().join();
         }
     }
@@ -55,12 +59,12 @@ public class MessageHandler extends AbstractReadEventHandler {
             return map;
         } catch (IOException e) {
             logger.error("Error parsing JSON: {}", e.getMessage());
-            return processNonJsonMessage(message);
+            return null;
         }
     }
 
     private Map<String, Object> processNonJsonMessage(Message message) {
-        return Collections.singletonMap("message", message.getData());
+        return Collections.singletonMap("base64", Base64.getEncoder().encodeToString(message.getData()));
     }
 
     private Map<String, Object> parseJson(ObjectMapper mapper, byte[] json) throws IOException {
