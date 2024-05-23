@@ -1,6 +1,6 @@
 description = "YDB Logstash Storage plugin"
 
-pluginInfo.pluginType  = "storage"
+pluginInfo.pluginType  = "output"
 pluginInfo.pluginClass = "YdbStorage"
 pluginInfo.pluginName  = "ydb_storage"
 

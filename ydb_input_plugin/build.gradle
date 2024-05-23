@@ -1,8 +1,8 @@
 description = "YDB Topics Input plugin"
 
 pluginInfo.pluginType  = "input"
-pluginInfo.pluginClass = "YdbTopicsInput"
-pluginInfo.pluginName  = "ydb_topics_input"
+pluginInfo.pluginClass = "YdbTopic"
+pluginInfo.pluginName  = "ydb_topic"
 
 dependencies {
     implementation 'tech.ydb:ydb-sdk-topic:2.1.10'

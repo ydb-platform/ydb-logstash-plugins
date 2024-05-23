@@ -1,8 +1,8 @@
 description = "YDB Topics Output plugin"
 
 pluginInfo.pluginType      = "output"
-pluginInfo.pluginClass     = "YdbTopicsOutput"
-pluginInfo.pluginName      = "ydb_topics_output"
+pluginInfo.pluginClass     = "YdbTopic"
+pluginInfo.pluginName      = "ydb_topic"
 
 dependencies {
     implementation 'tech.ydb:ydb-sdk-topic:2.1.10'

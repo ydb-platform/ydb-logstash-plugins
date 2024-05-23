@@ -30,8 +30,8 @@ import tech.ydb.topic.settings.TopicReadSettings;
 /**
  * @author Mikhail Lukashev
  */
-@LogstashPlugin(name = "ydb_topics_input")
-public class YdbTopicsInput implements Input {
+@LogstashPlugin(name = "ydb_topic")
+public class YdbTopic implements Input {
     static final PluginConfigSpec<String> CONNECTION = PluginConfigSpec.requiredStringSetting("connection_string");
     static final PluginConfigSpec<String> SA_KEY_FILE = PluginConfigSpec.stringSetting("sa_key_file");
     static final PluginConfigSpec<String> TOKEN_AUTH = PluginConfigSpec.stringSetting("token_auth");
@@ -53,7 +53,7 @@ public class YdbTopicsInput implements Input {
 
     private AsyncReader reader;
 
-    public YdbTopicsInput(String id, Configuration config, Context context) {
+    public YdbTopic(String id, Configuration config, Context context) {
         this.id = id;
 
         String connectionString = config.get(CONNECTION);

@@ -33,9 +33,9 @@ import tech.ydb.topic.write.QueueOverflowException;
 /**
  * @author Mikhail Lukashev
  */
-@LogstashPlugin(name = "ydb_topics_output")
-public class YdbTopicsOutput implements Output {
-    private final Logger logger = LoggerFactory.getLogger(YdbTopicsOutput.class);
+@LogstashPlugin(name = "ydb_topic")
+public class YdbTopic implements Output {
+    private final Logger logger = LoggerFactory.getLogger(YdbTopic.class);
 
     static final PluginConfigSpec<String> CONNECTION = PluginConfigSpec.requiredStringSetting("connection_string");
     static final PluginConfigSpec<String> SA_KEY_FILE = PluginConfigSpec.stringSetting("sa_key_file");
@@ -52,7 +52,7 @@ public class YdbTopicsOutput implements Output {
     private final AsyncWriter asyncWriter;
     private final CountDownLatch stopped = new CountDownLatch(1);
 
-    public YdbTopicsOutput(String id, Configuration config, Context context) {
+    public YdbTopic(String id, Configuration config, Context context) {
         this.id = id;
         String topicPath = config.get(TOPIC_PATH);
         String connectionString = config.get(CONNECTION);
