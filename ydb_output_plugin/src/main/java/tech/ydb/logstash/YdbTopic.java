@@ -24,6 +24,7 @@ import tech.ydb.auth.TokenAuthProvider;
 import tech.ydb.auth.iam.CloudAuthHelper;
 import tech.ydb.core.grpc.GrpcTransport;
 import tech.ydb.topic.TopicClient;
+import tech.ydb.topic.description.Codec;
 import tech.ydb.topic.settings.WriterSettings;
 import tech.ydb.topic.write.AsyncWriter;
 import tech.ydb.topic.write.Message;
@@ -64,6 +65,7 @@ public class YdbTopic implements Output {
 
         WriterSettings settings = WriterSettings.newBuilder()
                 .setTopicPath(topicPath)
+                .setCodec(Codec.RAW)
                 .build();
         asyncWriter = topicClient.createAsyncWriter(settings);
         asyncWriter.init();
