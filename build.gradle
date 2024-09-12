@@ -2,7 +2,7 @@ description = 'YDB LogStash plugins'
 
 allprojects {
     group = 'tech.ydb.logstash'
-    version = '0.9.6'
+    version = '0.9.7'
 }
 
 buildscript {
@@ -44,6 +44,7 @@ subprojects {
 
     shadowJar {
         archiveClassifier = null
+        mergeServiceFiles()
     }
 
     dependencies {
