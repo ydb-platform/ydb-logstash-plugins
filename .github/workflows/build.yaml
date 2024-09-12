@@ -34,17 +34,18 @@ jobs:
 
       - name: Test Build Gems on Latest Logstash Release Versions
         run: |
-          versions=($(echo "${{ steps.version.outputs.versions }}" | tr ' ' '\n'))
+          versions=`echo "${{ steps.version.outputs.versions }}" | tr ' ' '\n' | sort`
+
+          latest_version=`echo "$versions" | tail -n 1`
 
           # Find current major digit
-          first_digit=$(echo "${versions[0]}" | grep -oE '[0-9]+' | head -c 1)
-          # Find the last release with current major digit
-          latest_version=$(printf "%s\n" "${versions[@]}" | grep "^v$first_digit\." | sort -rV | head -n 1)
+          first_digit=`echo "$latest_version" | grep -oE '[0-9]+' | head -c 1`
 
           # Find previous major digit
           previous_first_digit=$((first_digit - 1))
+
           # Find the last release with previous major digit
-          previous_version=$(printf "%s\n" "${versions[@]}" | grep "^v$previous_first_digit\." | sort -rV | head -n 1)
+          previous_version=`echo "$versions" | grep "v$previous_first_digit\." | tail -n 1`
 
           echo "Building for Logstash versions: $latest_version and $previous_version"
 
